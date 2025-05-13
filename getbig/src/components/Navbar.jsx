@@ -1,37 +1,67 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import "../styles/Navbar.css";
+import { useState, useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
+import "../styles/Navbar.css"; // Adjust the path as necessary
 
 function Navbar() {
+  const location = useLocation();
+  const [scrolled, setScrolled] = useState(false);
+
+  // Add scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 20) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
-    <nav className="navbar">
+    <nav className={`navbar ${scrolled ? "scrolled" : ""}`}>
       <div className="logo-and-text">
-        <img src="../src/assets/logo-azul-osc.png" alt="App logo" width={40} height={40} className="app-logo" />
+        <img
+          src="../src/assets/logo-azul-osc.png"
+          alt="Get Big logo"
+          className="app-logo"
+        />
         <span className="app-name">Get Big</span>
       </div>
       <ul>
         <li>
-          <Link to="/">
+          <Link to="/" className={location.pathname === "/" ? "active" : ""}>
             <i className="fas fa-home"></i>
-            Home
+            <span>Home</span>
           </Link>
         </li>
         <li>
-          <Link to="/about">
+          <Link
+            to="/about"
+            className={location.pathname === "/about" ? "active" : ""}
+          >
             <i className="fas fa-info-circle"></i>
-            About
+            <span>About</span>
           </Link>
         </li>
         <li>
-          <Link to="/Rutina">
+          <Link
+            to="/rutina"
+            className={location.pathname === "/rutina" ? "active" : ""}
+          >
             <i className="fas fa-dumbbell"></i>
-            Rutina
+            <span>Rutina</span>
           </Link>
         </li>
         <li>
-          <Link to="/contact">
+          <Link
+            to="/contact"
+            className={location.pathname === "/contact" ? "active" : ""}
+          >
             <i className="fas fa-envelope"></i>
-            Contact
+            <span>Contact</span>
           </Link>
         </li>
       </ul>

@@ -1,19 +1,11 @@
 import React from "react";
-import { BrowserRouter as Router } from "react-router-dom";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
-import Content from "../components/Content";
-
+import Formulario from "../components/Formulario"; // ✅ Agregado
 
 function Home() {
   return (
-    <Router>
-      <div className="app-container">
-        <Navbar />
-        <Content />
-        <Footer />
-      </div>
-    </Router>
+    <div className="home-container">
+      <Formulario /> {/* ✅ Renderiza el formulario en Home */}
+    </div>
   );
 }
 

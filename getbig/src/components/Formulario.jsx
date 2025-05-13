@@ -1,73 +1,63 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../styles/Formulario.css";
+import { obtenerRutinasPosibles } from "../utils/calcularRutina";
+import { validarDatos } from "../utils/validaciones";
 
-function Formulario({ 
-  formData, 
-  handleChange, 
-  handleSubmit, 
-  error, 
-  setFormData,
-  setRutinaSeleccionada,
-  reiniciarFormulario
-}) {
-  const [rutinaSeleccionada, setLocalRutina] = useState("");
+function Formulario() {
+  const [formData, setFormData] = useState({
+    altura: "",
+    peso: "",
+    edad: "",
+    sexo: "",
+    objetivo: "",
+    experiencia: "",
+    tiempoEntrenamiento: "",
+    diasSemana: "",
+  });
 
-  const obtenerRutinasPosibles = (objetivo, tiempo, dias) => {
-    const rutinas = {
-      ganar_musculo: {
-        "30_min": { "3_dias": ["FULL BODY"], "4_dias": ["UPPER LOWER"], "6_dias": [] },
-        "1_hora": { "3_dias": ["FULL BODY"], "4_dias": ["UPPER LOWER"], "6_dias": ["PUSH PULL LEGS"] },
-        "2_horas": { "3_dias": ["PUSH PULL LEGS"], "4_dias": ["UPPER LOWER"], "6_dias": ["PUSH PULL LEGS", "ARNOLD SPLIT"] },
-      },
-      perder_grasa: {
-        "30_min": { "3_dias": ["FULL BODY"], "4_dias": ["UPPER LOWER"], "6_dias": [] },
-        "1_hora": { "3_dias": ["FULL BODY"], "4_dias": ["UPPER LOWER"], "6_dias": ["PUSH PULL LEGS"] },
-        "2_horas": { "3_dias": ["PUSH PULL LEGS"], "4_dias": ["UPPER LOWER"], "6_dias": ["PUSH PULL LEGS", "ARNOLD SPLIT"] },
-      },
-      mantener: {
-        "30_min": { "3_dias": ["FULL BODY"], "4_dias": ["UPPER LOWER"], "6_dias": [] },
-        "1_hora": { "3_dias": ["FULL BODY"], "4_dias": ["UPPER LOWER"], "6_dias": ["FULL BODY"] },
-        "2_horas": { "3_dias": ["FULL BODY"], "4_dias": ["UPPER LOWER"], "6_dias": ["FULL BODY"] },
-      },
-    };
-    return rutinas[objetivo]?.[tiempo]?.[dias] || [];
+  const [error, setError] = useState(null);
+  const [rutinaSeleccionada, setRutinaSeleccionada] = useState(null);
+  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
   };
 
-  const rutinasPosibles = obtenerRutinasPosibles(
-    formData.objetivo,
-    formData.tiempoEntrenamiento,
-    formData.diasSemana
-  );
-
-  const requiredFields = ["objetivo", "tiempoEntrenamiento", "diasSemana", "peso", "altura", "edad", "sexo"];
-  const isFormValid = requiredFields.every(field => formData[field] && formData[field] !== "");
-
-  useEffect(() => {
-    if (rutinasPosibles.length === 1) {
-      setLocalRutina(rutinasPosibles[0]);
-      setRutinaSeleccionada(rutinasPosibles[0]);
-    } else {
-      setLocalRutina("");
-      setRutinaSeleccionada("");
-    }
-  }, [rutinasPosibles]);
-
-  const handleReiniciar = () => {
-    setLocalRutina("");
-    reiniciarFormulario();
-  };
-
-  const handleFinalSubmit = (e) => {
+  const handleFormSubmit = (e) => {
     e.preventDefault();
-    if (rutinasPosibles.length === 1) {
-      setRutinaSeleccionada(rutinasPosibles[0]);
+
+    const resultadoValidacion = validarDatos(formData);
+    if (!resultadoValidacion.success) {
+      setError(resultadoValidacion.errores);
+      return;
     }
-    handleSubmit(e);
+
+    setError(null);
+
+    const rutina = obtenerRutinasPosibles(
+      formData.objetivo,
+      formData.tiempoEntrenamiento,
+      formData.diasSemana
+    );
+
+    if (rutina.length === 0) {
+      setError({ general: "No hay rutina disponible con estos parámetros." });
+      return;
+    }
+
+    setRutinaSeleccionada(rutina);
+    console.log("Formulario enviado con datos válidos:", formData);
+    console.log("Rutina generada:", rutina);
+
+    navigate("/rutina", { state: { rutina, formData } }); // ✅ Ahora también enviamos `formData`
   };
 
   return (
-  <>
-    <form className="formulario" onSubmit={handleFinalSubmit}>
+    <form className="formulario" onSubmit={handleFormSubmit}>
       <div className="form-row">
         <div className="input-group">
           <label htmlFor="altura">Altura (cm)</label>
@@ -75,11 +65,8 @@ function Formulario({
             type="number"
             id="altura"
             name="altura"
-            placeholder="Ej: 175"
-            value={formData.altura || ""}
+            value={formData.altura} // ✅ Ahora usa `formData` correctamente
             onChange={handleChange}
-            min="100"
-            max="250"
             required
           />
         </div>
@@ -89,16 +76,14 @@ function Formulario({
             type="number"
             id="peso"
             name="peso"
-            placeholder="Ej: 70"
-            value={formData.peso || ""}
+            value={formData.peso}
             onChange={handleChange}
-            min="30"
-            max="300"
             required
           />
         </div>
       </div>
 
+      {/* Edad y Sexo */}
       <div className="form-row">
         <div className="input-group">
           <label htmlFor="edad">Edad</label>
@@ -106,23 +91,14 @@ function Formulario({
             type="number"
             id="edad"
             name="edad"
-            placeholder="Ej: 25"
-            value={formData.edad || ""}
+            value={formData.edad}
             onChange={handleChange}
-            min="12"
-            max="120"
             required
           />
         </div>
         <div className="input-group">
           <label htmlFor="sexo">Sexo</label>
-          <select
-            id="sexo"
-            name="sexo"
-            value={formData.sexo || ""}
-            onChange={handleChange}
-            required
-          >
+          <select id="sexo" name="sexo" value={formData.sexo} onChange={handleChange} required>
             <option value="">Selecciona una opción</option>
             <option value="masculino">Masculino</option>
             <option value="femenino">Femenino</option>
@@ -130,32 +106,20 @@ function Formulario({
         </div>
       </div>
 
+      {/* Objetivo y Experiencia */}
       <div className="form-row">
         <div className="input-group">
           <label htmlFor="objetivo">Objetivo</label>
-          <select
-            id="objetivo"
-            name="objetivo"
-            value={formData.objetivo || ""}
-            onChange={handleChange}
-            required
-          >
+          <select id="objetivo" name="objetivo" value={formData.objetivo} onChange={handleChange} required>
             <option value="">Selecciona una opción</option>
             <option value="ganar_musculo">Ganar músculo</option>
             <option value="perder_grasa">Perder grasa</option>
             <option value="mantener">Mantener</option>
           </select>
         </div>
-
         <div className="input-group">
           <label htmlFor="experiencia">Experiencia</label>
-          <select
-            id="experiencia"
-            name="experiencia"
-            value={formData.experiencia || ""}
-            onChange={handleChange}
-            required
-          >
+          <select id="experiencia" name="experiencia" value={formData.experiencia} onChange={handleChange} required>
             <option value="">Selecciona una opción</option>
             <option value="principiante">Principiante</option>
             <option value="intermedio">Intermedio</option>
@@ -164,32 +128,20 @@ function Formulario({
         </div>
       </div>
 
+      {/* Tiempo y Días */}
       <div className="form-row">
         <div className="input-group">
-          <label htmlFor="tiempoEntrenamiento">¿Cuántas horas quieres entrenar al día?</label>
-          <select
-            id="tiempoEntrenamiento"
-            name="tiempoEntrenamiento"
-            value={formData.tiempoEntrenamiento || ""}
-            onChange={handleChange}
-            required
-          >
+          <label htmlFor="tiempoEntrenamiento">Tiempo de entrenamiento</label>
+          <select id="tiempoEntrenamiento" name="tiempoEntrenamiento" value={formData.tiempoEntrenamiento} onChange={handleChange} required>
             <option value="">Selecciona una opción</option>
             <option value="30_min">30 minutos</option>
             <option value="1_hora">1 hora</option>
             <option value="2_horas">2 horas</option>
           </select>
         </div>
-
         <div className="input-group">
-          <label htmlFor="diasSemana">¿Cuántos días quieres entrenar a la semana?</label>
-          <select
-            id="diasSemana"
-            name="diasSemana"
-            value={formData.diasSemana || ""}
-            onChange={handleChange}
-            required
-          >
+          <label htmlFor="diasSemana">Días de entrenamiento</label>
+          <select id="diasSemana" name="diasSemana" value={formData.diasSemana} onChange={handleChange} required>
             <option value="">Selecciona una opción</option>
             <option value="3_dias">3 días</option>
             <option value="4_dias">4 días</option>
@@ -198,19 +150,12 @@ function Formulario({
         </div>
       </div>
 
-      {error && <p className="error-message">{error}</p>}
+      {error && <p className="error-message">{Object.values(error).join(", ")}</p>}
 
       <div className="button-container">
-        <button 
-          type="submit"
-          className="submit-button"
-          disabled={!isFormValid || rutinasPosibles.length === 0}
-        >
-          Generar mi plan personalizado
-        </button>
+        <button type="submit" className="submit-button">Generar mi plan personalizado</button>
       </div>
-      </form>
-    </>
+    </form>
   );
 }
 
