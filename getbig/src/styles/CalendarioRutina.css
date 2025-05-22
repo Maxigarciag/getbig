@@ -295,6 +295,7 @@
   }
 }
 
+
 @media (max-width: 480px) {
   .dias-semana {
     grid-template-columns: repeat(2, 1fr);

@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/Formulario.css";
 import { obtenerRutinasPosibles } from "../utils/calcularRutina";
 import { validarDatos } from "../utils/validaciones";
+import { useRutinasPosibles } from "../utils/rutinas.js"; // ✅ Usamos el hook para obtener rutinas posibles
 
 function Formulario() {
   const [formData, setFormData] = useState({
@@ -19,16 +20,31 @@ function Formulario() {
   const [error, setError] = useState(null);
   const [rutinaSeleccionada, setRutinaSeleccionada] = useState(null);
   const navigate = useNavigate();
+  const rutinasPosibles = useRutinasPosibles(); // ✅ Obtenemos las rutinas desde la API
 
+  useEffect(() => {
+    console.log("📌 Rutinas posibles cargadas:", rutinasPosibles); // 🔍 Verificación en consola
+  }, [rutinasPosibles]);
+
+  // ✅ Definiendo correctamente `handleChange`
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+
+    setFormData((prevState) => ({
+      ...prevState,
+      [name]: value,
+    }));
+
+    console.log(`📌 Cambio detectado - ${name}:`, value);
   };
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
+
+    if (!formData.diasSemana || formData.diasSemana === "") {
+      setError({ general: "Selecciona los días de entrenamiento antes de continuar." });
+      return;
+    }
 
     const resultadoValidacion = validarDatos(formData);
     if (!resultadoValidacion.success) {
@@ -38,22 +54,38 @@ function Formulario() {
 
     setError(null);
 
+    if (!rutinasPosibles || rutinasPosibles.length === 0) {
+      console.error("❌ `rutinasPosibles` aún no ha cargado datos en `handleFormSubmit()`");
+      setError({ general: "No se pudo obtener las rutinas. Intenta nuevamente." });
+      return;
+    }
+
+    // 🔥 Convertimos la edad y `diasSemana` a número antes de enviarla
+    const datosProcesados = {
+      ...formData,
+      edad: parseInt(formData.edad, 10),
+      diasSemana: parseInt(formData.diasSemana, 10),
+    };
+
     const rutina = obtenerRutinasPosibles(
-      formData.objetivo,
-      formData.tiempoEntrenamiento,
-      formData.diasSemana
+      datosProcesados.objetivo,
+      datosProcesados.tiempoEntrenamiento,
+      datosProcesados.diasSemana,
+      rutinasPosibles
     );
 
+    console.log("📌 Datos enviados para redirección:", { rutina, datosProcesados });
+
     if (rutina.length === 0) {
-      setError({ general: "No hay rutina disponible con estos parámetros." });
+      setError({ general: "No hay rutina disponible con estos parámetros. Asegúrate de completar correctamente el formulario." });
       return;
     }
 
     setRutinaSeleccionada(rutina);
-    console.log("Formulario enviado con datos válidos:", formData);
-    console.log("Rutina generada:", rutina);
+    console.log("✅ Redirigiendo a /rutina con datos:", { rutina, datosProcesados });
 
-    navigate("/rutina", { state: { rutina, formData } }); // ✅ Ahora también enviamos `formData`
+    // ✅ Asegurar que `state` realmente está pasando datos
+    navigate("/rutina", { state: { rutina, formData: datosProcesados } });
   };
 
   return (
@@ -61,25 +93,11 @@ function Formulario() {
       <div className="form-row">
         <div className="input-group">
           <label htmlFor="altura">Altura (cm)</label>
-          <input
-            type="number"
-            id="altura"
-            name="altura"
-            value={formData.altura} // ✅ Ahora usa `formData` correctamente
-            onChange={handleChange}
-            required
-          />
+          <input type="number" id="altura" name="altura" value={formData.altura} onChange={handleChange} required />
         </div>
         <div className="input-group">
           <label htmlFor="peso">Peso (kg)</label>
-          <input
-            type="number"
-            id="peso"
-            name="peso"
-            value={formData.peso}
-            onChange={handleChange}
-            required
-          />
+          <input type="number" id="peso" name="peso" value={formData.peso} onChange={handleChange} required />
         </div>
       </div>
 
@@ -87,14 +105,7 @@ function Formulario() {
       <div className="form-row">
         <div className="input-group">
           <label htmlFor="edad">Edad</label>
-          <input
-            type="number"
-            id="edad"
-            name="edad"
-            value={formData.edad}
-            onChange={handleChange}
-            required
-          />
+          <input type="number" id="edad" name="edad" value={formData.edad} onChange={handleChange} required />
         </div>
         <div className="input-group">
           <label htmlFor="sexo">Sexo</label>
@@ -143,9 +154,9 @@ function Formulario() {
           <label htmlFor="diasSemana">Días de entrenamiento</label>
           <select id="diasSemana" name="diasSemana" value={formData.diasSemana} onChange={handleChange} required>
             <option value="">Selecciona una opción</option>
-            <option value="3_dias">3 días</option>
-            <option value="4_dias">4 días</option>
-            <option value="6_dias">6 días</option>
+            <option value="3">3 días</option>
+            <option value="4">4 días</option>
+            <option value="6">6 días</option>
           </select>
         </div>
       </div>
@@ -153,7 +164,9 @@ function Formulario() {
       {error && <p className="error-message">{Object.values(error).join(", ")}</p>}
 
       <div className="button-container">
-        <button type="submit" className="submit-button">Generar mi plan personalizado</button>
+        <button type="submit" className="submit-button" disabled={!rutinasPosibles.length}>
+          Generar mi plan personalizado
+        </button>
       </div>
     </form>
   );

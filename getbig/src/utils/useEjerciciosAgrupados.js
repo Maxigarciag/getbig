@@ -1,28 +1,23 @@
-/**
- * useEjerciciosAgrupados.js
- * 
- * Este hook personalizado agrupa los ejercicios por su grupo muscular correspondiente.
- * Se usa en CalendarioRutina.jsx para organizar los ejercicios de manera visual y estructurada.
- */
-
 import { useMemo } from "react";
-import { ejerciciosPorMusculo } from "./ejercicios.js";
 
-export function useEjerciciosAgrupados(ejerciciosActuales) {
-  return useMemo(() => {
-    const grupos = {};
+export const useEjerciciosAgrupados = (ejerciciosActuales) => {
+  console.log("📌 Datos antes de agrupar ejercicios:", ejerciciosActuales);
 
-    ejerciciosActuales.forEach(ejercicio => {
-      const grupo = Object.keys(ejerciciosPorMusculo).find(musculo =>
-        ejerciciosPorMusculo[musculo].includes(ejercicio)
-      ) || "Otros";
+  if (!Array.isArray(ejerciciosActuales) || ejerciciosActuales.length === 0) {
+    console.warn("⚠ No hay ejercicios actuales para agrupar.");
+    return {};
+  }
 
-      if (!grupos[grupo]) {
-        grupos[grupo] = [];
-      }
-      grupos[grupo].push(ejercicio);
-    });
+  const agrupados = ejerciciosActuales.reduce((agrupados, ejercicio) => {
+    const grupo = ejercicio.musculo_grupo?.toLowerCase().trim() || "Otros";
 
-    return grupos;
-  }, [ejerciciosActuales]);
-}
+    if (!agrupados[grupo]) {
+      agrupados[grupo] = [];
+    }
+    agrupados[grupo].push(ejercicio);
+    return agrupados;
+  }, {});
+
+  console.log("✅ Ejercicios agrupados correctamente:", agrupados);
+  return agrupados;
+};

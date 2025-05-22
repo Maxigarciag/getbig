@@ -43,7 +43,7 @@ function ResumenStats({ formData, t, diasEntrenamiento }) {
       >
         <div className="stat-label">{t.objetivo}</div>
         <div className="stat-value">
-          {formData.objetivo === "ganar_musculo" ? t.masa : 
+          {formData.objetivo === "ganar_musculo" ? "Volumen" :  // ✅ Ahora muestra "Volumen"
           formData.objetivo === "perder_grasa" ? t.definicion : t.mantenimiento}
         </div>
       </motion.div>

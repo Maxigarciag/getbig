@@ -5,14 +5,27 @@
  * Se usa en CalendarioRutina.jsx para asignar ejercicios a los días de entrenamiento.
  */
 
-export const ejerciciosPorMusculo = {
-  Pecho: ["Press banca plano", "Press inclinado", "Aperturas con mancuernas", "Flexiones"],
-  Hombros: ["Press militar", "Elevaciones laterales", "Deltoides posterior", "Face pulls"],
-  Tríceps: ["Fondos", "Extensiones en polea", "Press francés", "Fondos en banco"],
-  Espalda: ["Dominadas", "Remo con barra", "Jalón al pecho", "Peso muerto"],
-  Bíceps: ["Curl con barra", "Curl martillo", "Curl concentrado", "Curl en banco Scott"],
-  Cuádriceps: ["Sentadillas", "Prensa", "Zancadas", "Extensiones de pierna"],
-  Isquiotibiales: ["Peso muerto rumano", "Curl femoral", "Good mornings", "Hip thrust"],
-  Gemelos: ["Elevaciones de talón", "Press de pantorrilla", "Saltos de cuerda"],
-  Core: ["Plancha", "Russian twists", "Elevaciones de piernas", "Abdominales en rueda"]
-};
+import { useEffect, useState } from "react";
+
+export function useEjerciciosAgrupados() {
+  const [ejerciciosAgrupados, setEjerciciosAgrupados] = useState({});
+
+  useEffect(() => {
+    fetch("http://localhost:3000/api/ejercicios")
+      .then(res => res.json())
+      .then(data => {
+        console.log("✅ Ejercicios cargados:", data); // 🔍 Verificación en consola
+        const agrupados = {};
+        data.forEach(ejercicio => {
+          if (!agrupados[ejercicio.musculo_grupo]) {
+            agrupados[ejercicio.musculo_grupo] = [];
+          }
+          agrupados[ejercicio.musculo_grupo].push(ejercicio.nombre);
+        });
+        setEjerciciosAgrupados(agrupados);
+      })
+      .catch(err => console.error("❌ Error al obtener ejercicios:", err));
+  }, []);
+
+  return ejerciciosAgrupados;
+}

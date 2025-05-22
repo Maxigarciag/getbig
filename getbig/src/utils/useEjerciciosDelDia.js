@@ -1,28 +1,56 @@
-/**
- * useEjerciciosDelDia.js
- * 
- * Este hook personalizado obtiene la lista de ejercicios asignados a un día específico de la rutina.
- * Se usa en CalendarioRutina.jsx para mostrar los ejercicios según el día seleccionado.
- */
+import { useState, useEffect, useMemo, useCallback } from "react";
 
-import { useMemo, useCallback } from "react";
-import { ejerciciosPorMusculo } from "./ejercicios.js";
+export function useEjerciciosDelDia(diaSeleccionado, diasRutina, experiencia = "intermedio") {
+  const [ejerciciosPorMusculo, setEjerciciosPorMusculo] = useState({});
 
-export function useEjerciciosDelDia(diaSeleccionado, diasRutina) {
-  const generarEjercicios = useCallback((detalle) => {
-    const grupos = detalle.split(":")[1]?.split(",").map(g => g.trim()) || [];
+  useEffect(() => {
+    fetch("http://localhost:3000/api/ejercicios")
+      .then(res => res.json())
+      .then(data => {
+        console.log("✅ Ejercicios cargados desde la API:", data);
 
-    return grupos.flatMap(grupo => {
-      const clave = Object.keys(ejerciciosPorMusculo).find(k =>
-        grupo.toLowerCase().includes(k.toLowerCase())
-      );
-      return clave ? ejerciciosPorMusculo[clave].slice(0, 4) : [];
-    });
+        if (!Array.isArray(data) || data.length === 0) {
+          console.warn("⚠ La API devolvió un array vacío o datos inválidos.");
+          return;
+        }
+
+        const agrupados = {};
+        data.forEach(ejercicio => {
+          const grupoMuscular = ejercicio.musculo_grupo?.toLowerCase().trim();
+          if (!grupoMuscular) return;
+          if (!agrupados[grupoMuscular]) agrupados[grupoMuscular] = [];
+          agrupados[grupoMuscular].push(ejercicio);
+        });
+
+        console.log("✅ Ejercicios agrupados por grupo muscular:", agrupados);
+        setEjerciciosPorMusculo(agrupados);
+      })
+      .catch(err => console.error("❌ Error al obtener ejercicios:", err));
   }, []);
 
   return useMemo(() => {
-    if (diaSeleccionado === null) return [];
-    const descripcion = diasRutina[diaSeleccionado]?.[1];
-    return descripcion ? generarEjercicios(descripcion) : [];
-  }, [diaSeleccionado, diasRutina, generarEjercicios]);
+    console.log("📌 Estado actual de `diasRutina`:", diasRutina);
+    console.log("📌 Día seleccionado:", diaSeleccionado);
+
+    if (diaSeleccionado === null || !diasRutina || diasRutina.length === 0) {
+      console.warn("⚠ `diaSeleccionado` o `diasRutina` no están correctamente definidos.");
+      return [];
+    }
+
+    const diaRutina = diasRutina[diaSeleccionado];
+    if (!diaRutina || typeof diaRutina[1] !== "string" || diaRutina[1].trim() === "") {
+      console.warn("⚠ `diasRutina[diaSeleccionado]` no tiene una descripción válida.");
+      return [];
+    }
+
+    const descripcion = diaRutina[1].toLowerCase().trim();
+    console.log("✅ Descripción del día antes de generar ejercicios:", descripcion);
+
+    const grupos = descripcion.split(",").map(g => g.trim());
+    const ejerciciosGenerados = grupos.flatMap(grupo => ejerciciosPorMusculo[grupo] || []);
+
+    console.log("✅ Ejercicios generados para el día:", ejerciciosGenerados);
+
+    return ejerciciosGenerados;
+  }, [diaSeleccionado, diasRutina, ejerciciosPorMusculo]);
 }
