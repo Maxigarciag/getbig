@@ -1,9 +1,10 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import axios from "axios";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Home from "./pages/Home";
 import Login from "./components/Login";
+import Register from "./components/Register";
 import Formulario from "./components/Formulario";
 import CalendarioRutina from "./components/CalendarioRutina";
 import About from "./pages/About";
@@ -23,7 +24,10 @@ function PrivateRoute({ children }) {
   return user ? children : <Navigate to="/login" />;
 }
 
-function App() {
+function AppContent() {
+  const location = useLocation();
+  const showNavbar = !['/login', '/register'].includes(location.pathname);
+
   useEffect(() => {
     axios.get("https://jsonplaceholder.typicode.com/todos/1")
       .then(response => console.log("✅ Conexión exitosa:", response.data))
@@ -31,19 +35,28 @@ function App() {
   }, []);
 
   return (
+    <>
+      {showNavbar && <Navbar />}
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/plan-entrenamiento" element={<PrivateRoute><PlanEntrenamiento /></PrivateRoute>} />
+        <Route path="/rutina" element={<PrivateRoute><CalendarioRutina /></PrivateRoute>} />
+        <Route path="/progreso" element={<PrivateRoute><Progreso /></PrivateRoute>} />
+      </Routes>
+      {showNavbar && <Footer />}
+    </>
+  );
+}
+
+function App() {
+  return (
     <AuthProvider>
       <Router>
-        <Navbar />
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/plan-entrenamiento" element={<PrivateRoute><PlanEntrenamiento /></PrivateRoute>} />
-          <Route path="/rutina" element={<PrivateRoute><CalendarioRutina /></PrivateRoute>} />
-          <Route path="/progreso" element={<PrivateRoute><Progreso /></PrivateRoute>} />
-        </Routes>
-        <Footer />
+        <AppContent />
       </Router>
     </AuthProvider>
   );
